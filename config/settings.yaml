@@ -1,0 +1,57 @@
+# Non-secret strategy / risk / co-pilot parameters.
+# Secrets live in .env only.
+
+universe:
+  symbols: ["BTC/USDT", "ETH/USDT"]
+  timeframe: "15m"          # execution timeframe (council: 15m, not 5m)
+  htf_timeframe: "1h"       # higher-timeframe trend filter
+
+strategy:
+  active: "vwap_trend"      # vwap_trend | vwap_meanrev | ema_pullback | orb
+  regime_switch: true       # ADX routes trend-pullback vs mean-reversion
+  vwap_anchor: "prev_session_extreme"  # anchored VWAP off prior session high/low
+  ema_fast: 21
+  ema_slow: 50
+  adx_period: 14
+  adx_trend_min: 23         # council: test 22-25 (>= => trend regime)
+  adx_range_max: 18         # below => range regime (mean-reversion)
+  atr_period: 14
+  pullback_tolerance_pct: 0.0005   # price within 0.05% of VWAP counts as a tag
+  no_chase_atr_mult: 0.5           # skip if extended > 0.5*ATR beyond VWAP
+  entry_limit_valid_bars: 2        # cancel unfilled limit after N closed bars
+
+exits:
+  stop_atr_mult: 1.0        # SL = min(swing, VWAP - mult*ATR)
+  stop_buffer_atr_mult: 0.25  # extra buffer below swing low (anti stop-hunt)
+  close_confirmed_stop: true  # exit only on candle CLOSE beyond level
+  tp1_r: 1.0                # take 50% at +1R
+  tp1_fraction: 0.5
+  tp2_r: 2.0                # take 25% at +2R
+  tp2_fraction: 0.25
+  trail_atr_mult: 1.0       # trail runner after TP1
+  time_stop_bars: 12        # exit if not +1R within N bars
+
+risk:
+  risk_per_trade_pct: 0.005     # 0.5% of equity per trade
+  max_notional_pct: 0.25        # cap notional at 25% of equity
+  max_concurrent_positions: 3
+  max_same_direction: 2         # correlation guard
+  correlation_threshold: 0.7    # same-side corr above this = additive risk
+  daily_loss_limit_pct: 0.02    # -2% of start-of-day equity => HALT
+  max_trades_per_day: 8
+  consecutive_loss_cooldown: 3  # N losses in a row => cooldown
+  cooldown_minutes: 120
+  slippage_assumption_pct: 0.0007  # added to stop distance when sizing
+  min_stop_distance_pct: 0.002     # reject trades with stop tighter than this
+  fee_round_trip_pct: 0.0020       # taker round-trip estimate for fee gate
+  min_r_fee_multiple: 8            # require 1R >= N * round-trip cost
+
+coach:
+  default_autonomy: "approve"   # auto | approve | advise
+  approval_timeout_sec: 90
+  override_friction: true       # require explicit confirm + show stats
+  tilt_detection: true
+  narrate: true
+
+notify:
+  channels: ["telegram", "ui"]  # both
