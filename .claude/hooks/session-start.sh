@@ -12,11 +12,9 @@ fi
 ./.venv/bin/python -m pip install --upgrade pip >/dev/null
 ./.venv/bin/python -m pip install -e ".[dev]"
 
-# Persist the venv for the rest of the session so `python`/`pytest` resolve to it.
 echo "export VIRTUAL_ENV=\"$CLAUDE_PROJECT_DIR/.venv\"" >> "$CLAUDE_ENV_FILE"
 echo "export PATH=\"$CLAUDE_PROJECT_DIR/.venv/bin:\$PATH\"" >> "$CLAUDE_ENV_FILE"
 
-# Install UI dependencies (cached in the container after first run).
 if [ -d "ui" ] && [ -f "ui/package.json" ]; then
   echo "[session-start] Installing UI dependencies..."
   (cd ui && npm install)
