@@ -37,19 +37,28 @@ class Runtime:
         if self.telegram.enabled:
             self.notify.register(self.telegram)
 
-        self.broker = PaperBroker(
-            starting_equity=10_000.0,
-            fee_rate=self.settings.risk.get("fee_round_trip_pct", 0.002) / 2,
-            slippage_pct=self.settings.risk.get("slippage_assumption_pct", 0.0007),
-        )
+        # live = real testnet feed AND real testnet order execution.
+        # falls back to paper/synthetic when keys are missing.
+        if use_live is None:
+            use_live = self.settings.secrets.use_live
+        self.use_live = bool(use_live) and bool(
+            self.settings.secrets.binance_testnet_api_key)
+
+        if self.use_live:
+            from .execution.ccxt_adapter import CcxtBroker
+            self.broker = CcxtBroker(self.settings.secrets)
+            log.info("using CcxtBroker — orders go to the exchange TESTNET")
+        else:
+            self.broker = PaperBroker(
+                starting_equity=10_000.0,
+                fee_rate=self.settings.risk.get("fee_round_trip_pct", 0.002) / 2,
+                slippage_pct=self.settings.risk.get("slippage_assumption_pct", 0.0007),
+            )
         autonomy = AutonomyMode(self.settings.coach.get("default_autonomy", "approve"))
         self.engine = TradingEngine(
             self.settings, self.broker, self.approvals, self.notify,
             autonomy=autonomy, persist=True)
 
-        # choose feed
-        self.use_live = bool(use_live) and bool(
-            self.settings.secrets.binance_testnet_api_key)
         self._feed = self._build_feed()
 
     def _build_feed(self):

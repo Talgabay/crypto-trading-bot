@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def _startup() -> None:
-        rt = Runtime(use_live=False)
+        rt = Runtime()  # live vs synthetic comes from USE_LIVE in .env
         await rt.start_telegram()
         app.state.rt = rt
         app.state.task = asyncio.create_task(_supervise(rt))

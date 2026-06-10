@@ -21,6 +21,7 @@ class Secrets(BaseSettings):
     exchange: str = "binance"
     sandbox: bool = True
     trading_mode: str = "paper"  # hard safety: only 'paper' executes real orders
+    use_live: bool = False       # True => real testnet feed + testnet orders
 
     binance_testnet_api_key: str = ""
     binance_testnet_secret: str = ""
