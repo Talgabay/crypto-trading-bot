@@ -16,8 +16,11 @@ class TiltState:
     consecutive_losses: int = 0
     cooldown_until: float = 0.0
 
-    def in_cooldown(self) -> bool:
-        return time.time() < self.cooldown_until
+    def in_cooldown(self, now: float | None = None) -> bool:
+        # `now` is the bar-close epoch: in live it tracks the wall clock, in
+        # replay it is SIMULATED time — wall-clock here froze backtests in
+        # eternal cooldown after one loss streak.
+        return (time.time() if now is None else now) < self.cooldown_until
 
 
 class TiltDetector:
@@ -26,7 +29,7 @@ class TiltDetector:
         self.cooldown_minutes = params.get("cooldown_minutes", 120)
         self.state = TiltState()
 
-    def record_trade(self, pnl: float) -> str | None:
+    def record_trade(self, pnl: float, now: float | None = None) -> str | None:
         """Update streak; return a coach message if cooldown is triggered."""
         if pnl < 0:
             self.state.consecutive_losses += 1
@@ -34,7 +37,8 @@ class TiltDetector:
             self.state.consecutive_losses = 0
 
         if self.state.consecutive_losses >= self.max_streak:
-            self.state.cooldown_until = time.time() + self.cooldown_minutes * 60
+            base = time.time() if now is None else now
+            self.state.cooldown_until = base + self.cooldown_minutes * 60
             self.state.consecutive_losses = 0
             return (f"⏸️ {self.max_streak} הפסדים ברצף — מפעיל קירור של "
                     f"{self.cooldown_minutes} דק'. זה בדיוק הרגע שבו revenge "

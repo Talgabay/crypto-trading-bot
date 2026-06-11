@@ -59,6 +59,7 @@ class TradingEngine:
         self.status = EngineStatus(autonomy=autonomy)
         self.day = DayBook(start_equity=broker.get_equity())
         self.consecutive_losses = 0
+        self._now: float | None = None  # bar-close epoch (simulated in replay)
 
     # --- public controls ---------------------------------------------------
     def set_state(self, state: EngineState) -> None:
@@ -70,13 +71,15 @@ class TradingEngine:
     # --- main per-bar entrypoint ------------------------------------------
     async def process_bar(self, ev: BarEvent) -> None:
         self.status.last_price[ev.symbol] = ev.bar["close"]
+        ts = ev.exec_df.index[-1]
+        self._now = ts.timestamp() if hasattr(ts, "timestamp") else None
         self._roll_day(ev)
 
         await self._manage_positions(ev)
 
         if self.status.state in (EngineState.HALTED, EngineState.PAUSED):
             return
-        if self.tilt.state.in_cooldown():
+        if self.tilt.state.in_cooldown(self._now):
             self.set_state(EngineState.COOLDOWN)
             return
         if self.status.state is EngineState.COOLDOWN:
@@ -99,7 +102,8 @@ class TradingEngine:
                 repo.snapshot_equity(self.broker.get_equity(),
                                      self.day.realized_pnl)
             if ex.closed:
-                cooldown_msg = self.tilt.record_trade(ex.position.realized_pnl)
+                cooldown_msg = self.tilt.record_trade(
+                    ex.position.realized_pnl, self._now)
                 self.discipline.record(False, ex.position.realized_pnl)
                 if cooldown_msg:
                     await self.notify.text(cooldown_msg)
@@ -186,7 +190,7 @@ class TradingEngine:
             open_sides=[p.side for p in positions],
             daily_realized_pnl=self.day.realized_pnl,
             trades_today=self.day.trades,
-            in_cooldown=self.tilt.state.in_cooldown(),
+            in_cooldown=self.tilt.state.in_cooldown(self._now),
         )
 
     def _roll_day(self, ev: BarEvent) -> None:
