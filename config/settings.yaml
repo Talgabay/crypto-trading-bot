@@ -2,7 +2,9 @@
 # Secrets live in .env only.
 
 universe:
-  symbols: ["BTC/USDT", "ETH/USDT"]
+  # 5 symbols (backtested 2026-06-11: +27% trade frequency, same maxDD).
+  # Correlation guard (max_same_direction: 2) keeps concentration in check.
+  symbols: ["BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"]
   timeframe: "15m"          # execution timeframe (council: 15m, not 5m)
   htf_timeframe: "1h"       # higher-timeframe trend filter
 
