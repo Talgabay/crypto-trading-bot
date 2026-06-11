@@ -12,11 +12,9 @@ __pycache__/
 .env.local
 
 # Data & DB
-data/
+/data/
 *.db
 *.sqlite
-*.sqlite3
-*.log
 
 # Node / UI
 ui/node_modules/
