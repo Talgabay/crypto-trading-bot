@@ -11,8 +11,8 @@ __pycache__/
 .env
 .env.local
 
-# Data & DB
-data/
+# Data & DB (anchored: only the root data/ dir, NOT engine/data/)
+/data/
 *.db
 *.sqlite
 *.sqlite3
